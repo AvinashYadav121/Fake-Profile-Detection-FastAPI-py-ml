@@ -1,24 +1,35 @@
 
+
+# from pydantic import BaseModel
+
 # from fastapi import FastAPI
 # from fastapi.middleware.cors import CORSMiddleware
 # from pydantic import BaseModel
 # import joblib
 # import numpy as np
 
+# # =========================
+# # APP INIT
+# # =========================
+
 # app = FastAPI()
 
-# # Allow frontend access
-# # 🔐 CORS CONFIGURATION
+# # =========================
+# # CORS CONFIG (MANDATORY)
+# # =========================
+
 # app.add_middleware(
 #     CORSMiddleware,
-#     allow_origins=["*"],
+#     allow_origins=["*"],  # for production you can restrict later
 #     allow_credentials=True,
 #     allow_methods=["*"],
 #     allow_headers=["*"],
 # )
 
+# # =========================
+# # LOAD MODELS
+# # =========================
 
-# # Load models
 # models = {
 #     "dataset1": {
 #         "RandomForest": joblib.load("models/rf_dataset1.pkl"),
@@ -36,23 +47,32 @@
 #     "dataset1": {
 #         "RandomForest": 95.38,
 #         "LightGBM": 97.77,
-#         "XGBoost": 98.41
+#         "XGBoost": 98.41,
 #     },
 #     "dataset2": {
 #         "RandomForest": 94.12,
 #         "LightGBM": 96.85,
-#         "XGBoost": 97.63
-#     }
+#         "XGBoost": 97.63,
+#     },
 # }
+
+# # =========================
+# # REQUEST SCHEMA
+# # =========================
 
 # class PredictRequest(BaseModel):
 #     dataset: str
-#     algorithm: str
+#     algorithm: str | None = None
 #     features: list
+
+# # =========================
+# # SINGLE ALGORITHM PREDICTION
+# # =========================
 
 # @app.post("/predict")
 # def predict(req: PredictRequest):
 #     model = models[req.dataset][req.algorithm]
+
 #     X = np.array(req.features).reshape(1, -1)
 #     pred = model.predict(X)[0]
 
@@ -60,52 +80,39 @@
 #         "prediction": "Fake Account" if pred == 1 else "Real Account",
 #         "algorithm": req.algorithm,
 #         "accuracy": accuracies[req.dataset][req.algorithm],
-#         "comparison": accuracies[req.dataset]
 #     }
 
-
-
-# from instagram_fetch import fetch_instagram_profile
-# from instagram_fetch import map_to_dataset1, map_to_dataset2
-
-# @app.post("/predict-instagram")
-# def predict_instagram(username: str, dataset: str, algorithm: str):
-#     insta_data = fetch_instagram_profile(username)
-
-#     if dataset == "dataset1":
-#         features = map_to_dataset1(insta_data)
-#     else:
-#         features = map_to_dataset2(insta_data)
-
-#     model = models[dataset][algorithm]
-#     pred = model.predict([features])[0]
-
-#     return {
-#         "username": username,
-#         "prediction": "Fake Account" if pred == 1 else "Real Account",
-#         "algorithm": algorithm,
-#         "dataset": dataset,
-#         "used_features": features
-#     }
+# # =========================
+# # COMPARE ALL ALGORITHMS
+# # =========================
 
 # @app.post("/predict-compare")
 # def predict_compare(req: PredictRequest):
 #     dataset = req.dataset
-#     features = np.array(req.features).reshape(1, -1)
+#     X = np.array(req.features).reshape(1, -1)
 
-#     results = {}
+#     comparison = {}
 
 #     for algo_name, model in models[dataset].items():
-#         pred = model.predict(features)[0]
-#         results[algo_name] = {
+#         pred = model.predict(X)[0]
+
+#         comparison[algo_name] = {
 #             "prediction": "Fake Account" if pred == 1 else "Real Account",
-#             "accuracy": accuracies[dataset][algo_name]
+#             "accuracy": accuracies[dataset][algo_name],
 #         }
 
 #     return {
 #         "dataset": dataset,
-#         "results": results
+#         "comparison": comparison
 #     }
+
+# # =========================
+# # HEALTH CHECK (OPTIONAL)
+# # =========================
+
+# @app.get("/")
+# def health():
+#     return {"status": "API is running 🚀"}
 
 
 from fastapi import FastAPI
@@ -121,12 +128,12 @@ import numpy as np
 app = FastAPI()
 
 # =========================
-# CORS CONFIG (MANDATORY)
+# CORS CONFIG
 # =========================
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # for production you can restrict later
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -163,7 +170,7 @@ accuracies = {
 }
 
 # =========================
-# REQUEST SCHEMA
+# REQUEST SCHEMAS
 # =========================
 
 class PredictRequest(BaseModel):
@@ -171,8 +178,12 @@ class PredictRequest(BaseModel):
     algorithm: str | None = None
     features: list
 
+class TrustRequest(BaseModel):
+    dataset: str
+    features: list
+
 # =========================
-# SINGLE ALGORITHM PREDICTION
+# SINGLE PREDICTION
 # =========================
 
 @app.post("/predict")
@@ -213,7 +224,39 @@ def predict_compare(req: PredictRequest):
     }
 
 # =========================
-# HEALTH CHECK (OPTIONAL)
+# TRUST CHECK (NEW UPGRADE)
+# =========================
+
+@app.post("/trust-check")
+def trust_check(req: TrustRequest):
+
+    dataset = req.dataset
+    X = np.array(req.features).reshape(1, -1)
+
+    # Use best model automatically
+    model = models[dataset]["XGBoost"]
+
+    pred = model.predict(X)[0]
+
+    fake_score = 1 if pred == 1 else 0
+    trust_score = 1 - fake_score
+
+    if fake_score < 0.3:
+        risk = "Safe"
+    elif fake_score < 0.6:
+        risk = "Suspicious"
+    else:
+        risk = "High Risk"
+
+    return {
+        "fake_risk": fake_score,
+        "trust_score": trust_score,
+        "risk_level": risk,
+        "model_used": "XGBoost"
+    }
+
+# =========================
+# HEALTH CHECK
 # =========================
 
 @app.get("/")
