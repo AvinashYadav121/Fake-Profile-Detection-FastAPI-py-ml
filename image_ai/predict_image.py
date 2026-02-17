@@ -45,7 +45,8 @@ import cv2
 import numpy as np
 from io import BytesIO
 from PIL import Image
-from main import get_image_model
+from models.image_model_loader import get_image_model
+
 
 def get_image_score(url):
 
