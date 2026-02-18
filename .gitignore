@@ -18,3 +18,8 @@ __pycache__/
 
 
 image_dataset/
+myenv/
+venv/
+.env/
+__pycache__/
+*.pyc
