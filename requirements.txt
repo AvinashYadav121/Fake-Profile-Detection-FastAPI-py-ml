@@ -11,4 +11,4 @@ lightgbm==4.3.0
 pillow==10.3.0
 opencv-python-headless==4.9.0.80
 tensorflow-cpu==2.15.0
-mediapipe==0.10.11
+mediapipe==0.10.9
