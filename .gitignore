@@ -23,3 +23,29 @@ venv/
 .env/
 __pycache__/
 *.pyc
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+myenv/
+venv/
+
+# ML models temp
+*.h5.cache
+*.pt
+*.pth
+
+# OS
+.DS_Store
+
+# Deploy junk
+railway.json
+runtime.txt
+rebuild.txt
+rebuild2.txt
+Dockerfile
+.nixpacks
+render.yaml
+Procfile
