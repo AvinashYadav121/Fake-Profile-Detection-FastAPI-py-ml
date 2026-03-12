@@ -1,15 +1,16 @@
-# import joblib
-# import numpy as np
-# import tensorflow as tf
-
-# tabular_model = joblib.load("models/tabular_model.pkl")
-# image_model = tf.keras.models.load_model("models/image_model.h5")
 
 # from fastapi import FastAPI
 # from fastapi.middleware.cors import CORSMiddleware
 # from pydantic import BaseModel
 # import joblib
 # import numpy as np
+
+# from services.instagram_service import fetch_profile
+# from services.feature_engineering import extract_features
+# from services.image_service import analyze_image
+# from urllib.parse import quote, unquote
+# from fastapi.responses import StreamingResponse
+# import requests
 
 # # =========================
 # # APP INIT
@@ -18,7 +19,7 @@
 # app = FastAPI()
 
 # # =========================
-# # CORS CONFIG
+# # CORS
 # # =========================
 
 # app.add_middleware(
@@ -30,7 +31,7 @@
 # )
 
 # # =========================
-# # LOAD MODELS
+# # LOAD OLD MODELS
 # # =========================
 
 # models = {
@@ -46,18 +47,11 @@
 #     }
 # }
 
-# accuracies = {
-#     "dataset1": {
-#         "RandomForest": 95.38,
-#         "LightGBM": 97.77,
-#         "XGBoost": 98.41,
-#     },
-#     "dataset2": {
-#         "RandomForest": 94.12,
-#         "LightGBM": 96.85,
-#         "XGBoost": 97.63,
-#     },
-# }
+# # =========================
+# # LOAD NEW TABULAR MODEL
+# # =========================
+
+# tabular_model = joblib.load("models/tabular_model.pkl")
 
 # # =========================
 # # REQUEST SCHEMAS
@@ -65,36 +59,52 @@
 
 # class PredictRequest(BaseModel):
 #     dataset: str
-#     algorithm: str | None = None
+#     algorithm: str
 #     features: list
 
 # class TrustRequest(BaseModel):
 #     dataset: str
 #     features: list
+# # =========================
+# # Image
+# # =========================
+# @app.get("/image-proxy")
+# def image_proxy(url: str):
+#     decoded_url = unquote(unquote(url))
+#     response = requests.get(decoded_url, stream=True)
+#     return StreamingResponse(response.raw, media_type="image/jpeg")
 
 # # =========================
-# # SINGLE PREDICTION
+# # HEALTH CHECK
+# # =========================
+
+# @app.get("/")
+# def home():
+#     return {"status": "Backend running 🚀"}
+
+# # =========================
+# # OLD ROUTE: SINGLE PREDICTION
 # # =========================
 
 # @app.post("/predict")
 # def predict(req: PredictRequest):
-#     model = models[req.dataset][req.algorithm]
 
+#     model = models[req.dataset][req.algorithm]
 #     X = np.array(req.features).reshape(1, -1)
 #     pred = model.predict(X)[0]
 
 #     return {
 #         "prediction": "Fake Account" if pred == 1 else "Real Account",
-#         "algorithm": req.algorithm,
-#         "accuracy": accuracies[req.dataset][req.algorithm],
+#         "algorithm": req.algorithm
 #     }
 
 # # =========================
-# # COMPARE ALL ALGORITHMS
+# # OLD ROUTE: COMPARE ALL
 # # =========================
 
 # @app.post("/predict-compare")
 # def predict_compare(req: PredictRequest):
+
 #     dataset = req.dataset
 #     X = np.array(req.features).reshape(1, -1)
 
@@ -104,8 +114,7 @@
 #         pred = model.predict(X)[0]
 
 #         comparison[algo_name] = {
-#             "prediction": "Fake Account" if pred == 1 else "Real Account",
-#             "accuracy": accuracies[dataset][algo_name],
+#             "prediction": "Fake Account" if pred == 1 else "Real Account"
 #         }
 
 #     return {
@@ -114,17 +123,14 @@
 #     }
 
 # # =========================
-# # TRUST CHECK (NEW UPGRADE)
+# # OLD ROUTE: TRUST CHECK
 # # =========================
 
 # @app.post("/trust-check")
 # def trust_check(req: TrustRequest):
 
-#     dataset = req.dataset
+#     model = models[req.dataset]["XGBoost"]
 #     X = np.array(req.features).reshape(1, -1)
-
-#     # Use best model automatically
-#     model = models[dataset]["XGBoost"]
 
 #     pred = model.predict(X)[0]
 
@@ -141,23 +147,12 @@
 #     return {
 #         "fake_risk": fake_score,
 #         "trust_score": trust_score,
-#         "risk_level": risk,
-#         "model_used": "XGBoost"
+#         "risk_level": risk
 #     }
 
 # # =========================
-# # HEALTH CHECK
+# # NEW ROUTE: AI USERNAME DETECTION
 # # =========================
-
-# @app.get("/")
-# def health():
-#     return {"status": "API is running 🚀"}
-
-
-
-# from services.instagram_service import fetch_profile
-# from services.feature_engineering import extract_features
-# from services.image_service import analyze_image
 
 # @app.get("/ai-detect/{username}")
 # def ai_detect(username: str):
@@ -167,91 +162,14 @@
 #     if not profile:
 #         return {"error": "Profile not found"}
 
-#     # Tabular
+#     # Tabular Score
 #     features = extract_features(profile)
 #     tab_score = float(tabular_model.predict_proba([features])[0][1])
 
-#     # Image
-#     image_model = None
-
-# def get_image_model():
-#     global image_model
-#     if image_model is None:
-#         image_model = tf.keras.models.load_model("models/image_model.h5")
-#     return image_model
-
-#     # Combine
-#     final_score = (tab_score * 0.7) + (img_score * 0.3)
-
-#     result = "Fake" if final_score > 0.5 else "Real"
-
-#     return {
-#         "username": profile["username"],
-#         "followers": profile["followers"],
-#         "posts": profile["posts"],
-#         "tabular_score": round(tab_score,2),
-#         "image_score": round(img_score,2),
-#         "final_score": round(final_score,2),
-#         "result": result
-#     }
-
-# from fastapi import FastAPI
-# from fastapi.middleware.cors import CORSMiddleware
-# import joblib
-# import tensorflow as tf
-# import numpy as np
-
-# from services.instagram_service import fetch_profile
-# from services.feature_engineering import extract_features
-# from services.image_service import analyze_image
-# from models.image_model_loader import get_image_model
-
-
-# app = FastAPI()
-
-# # ---------------- CORS ----------------
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-
-# # ---------------- LOAD TABULAR MODEL ----------------
-# tabular_model = joblib.load("models/tabular_model.pkl")
-
-# # ---------------- LAZY LOAD IMAGE MODEL ----------------
-# image_model = None
-
-# # def get_image_model():
-# #     global image_model
-# #     if image_model is None:
-# #         image_model = tf.keras.models.load_model("models/image_model.h5")
-# #     return image_model
-
-# # ---------------- OLD ROUTES ----------------
-# @app.get("/")
-# def home():
-#     return {"status": "Backend running"}
-
-# # ---------------- NEW AI ROUTE ----------------
-# @app.get("/ai-detect/{username}")
-# def ai_detect(username: str):
-
-#     profile = fetch_profile(username)
-
-#     if not profile:
-#         return {"error": "Profile not found"}
-
-#     # Tabular score
-#     features = extract_features(profile)
-#     tab_score = float(tabular_model.predict_proba([features])[0][1])
-
-#     # Image score
+#     # Image Score
 #     img_score = float(analyze_image(profile["profile_pic_url"]))
 
-#     # Final score
+#     # Final Fusion Score
 #     final_score = (tab_score * 0.7) + (img_score * 0.3)
 
 #     result = "Fake" if final_score > 0.5 else "Real"
@@ -260,13 +178,13 @@
 #         "username": profile["username"],
 #         "followers": profile["followers"],
 #         "posts": profile["posts"],
+#         "profile_pic": f"http://localhost:8000/image-proxy?url={quote(quote(profile['profile_pic_url']))}",
+
 #         "tabular_score": round(tab_score, 3),
 #         "image_score": round(img_score, 3),
 #         "final_score": round(final_score, 3),
 #         "result": result
 #     }
-
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -274,8 +192,10 @@ import joblib
 import numpy as np
 
 from services.instagram_service import fetch_profile
-from services.feature_engineering import extract_features
 from services.image_service import analyze_image
+
+import networkx as nx
+
 from urllib.parse import quote, unquote
 from fastapi.responses import StreamingResponse
 import requests
@@ -319,7 +239,7 @@ models = {
 # LOAD NEW TABULAR MODEL
 # =========================
 
-tabular_model = joblib.load("models/tabular_model.pkl")
+tabular_model = joblib.load("models/fake_profile_model.pkl")
 
 # =========================
 # REQUEST SCHEMAS
@@ -333,9 +253,11 @@ class PredictRequest(BaseModel):
 class TrustRequest(BaseModel):
     dataset: str
     features: list
+
 # =========================
-# Image
+# IMAGE PROXY
 # =========================
+
 @app.get("/image-proxy")
 def image_proxy(url: str):
     decoded_url = unquote(unquote(url))
@@ -419,6 +341,88 @@ def trust_check(req: TrustRequest):
     }
 
 # =========================
+# FEATURE ENGINEERING (NEW)
+# =========================
+
+def build_features(profile):
+
+    followers = profile["followers"]
+    followings = profile["following"]
+    posts = profile["posts"]
+
+    bio = profile.get("bio", "")
+    bio_len = len(bio)
+
+    username = profile["username"]
+
+    has_pic = 1 if profile["profile_pic_url"] else 0
+    username_len = len(username)
+    username_digits = sum(c.isdigit() for c in username)
+
+    full_name_len = len(profile.get("full_name",""))
+
+    is_private = profile.get("is_private",0)
+    is_business = profile.get("is_business",0)
+    is_recent_user = profile.get("is_recent_user",0)
+
+    # =====================
+    # Behavioral Features
+    # =====================
+
+    follow_ratio = followers / (followings + 1)
+
+    follow_diff = followers - followings
+
+    post_follower_ratio = posts / (followers + 1)
+
+    activity_score = posts / (followings + 1)
+
+    # =====================
+    # Graph Features
+    # =====================
+
+    G = nx.Graph()
+
+    user = "target"
+
+    follower_node = f"followers_{followers}"
+    following_node = f"following_{followings}"
+
+    G.add_edge(user, follower_node)
+    G.add_edge(user, following_node)
+
+    degree = nx.degree_centrality(G)[user]
+
+    clustering = nx.clustering(G, user)
+
+    pagerank = nx.pagerank(G)[user]
+
+    return [
+
+        has_pic,
+        username_len,
+        username_digits,
+        is_private,
+        full_name_len,
+
+        posts,
+        followers,
+        followings,
+        bio_len,
+        is_business,
+        is_recent_user,
+
+        follow_ratio,
+        follow_diff,
+        post_follower_ratio,
+        activity_score,
+
+        degree,
+        clustering,
+        pagerank
+    ]
+
+# =========================
 # NEW ROUTE: AI USERNAME DETECTION
 # =========================
 
@@ -430,26 +434,34 @@ def ai_detect(username: str):
     if not profile:
         return {"error": "Profile not found"}
 
-    # Tabular Score
-    features = extract_features(profile)
-    tab_score = float(tabular_model.predict_proba([features])[0][1])
+    # TABULAR MODEL
+    features = build_features(profile)
 
-    # Image Score
-    img_score = float(analyze_image(profile["profile_pic_url"]))
+    tab_score = float(
+        tabular_model.predict_proba([features])[0][1]
+    )
 
-    # Final Fusion Score
+    # IMAGE MODEL
+    img_score = float(
+        analyze_image(profile["profile_pic_url"])
+    )
+
+    # FUSION
     final_score = (tab_score * 0.7) + (img_score * 0.3)
 
     result = "Fake" if final_score > 0.5 else "Real"
 
     return {
+
         "username": profile["username"],
         "followers": profile["followers"],
         "posts": profile["posts"],
+
         "profile_pic": f"http://localhost:8000/image-proxy?url={quote(quote(profile['profile_pic_url']))}",
 
-        "tabular_score": round(tab_score, 3),
-        "image_score": round(img_score, 3),
-        "final_score": round(final_score, 3),
+        "tabular_score": round(tab_score,3),
+        "image_score": round(img_score,3),
+        "final_score": round(final_score,3),
+
         "result": result
     }

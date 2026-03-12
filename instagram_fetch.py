@@ -1,24 +1,3 @@
-# import instaloader
-
-# L = instaloader.Instaloader()
-
-# def fetch_instagram_profile(username: str):
-#     profile = instaloader.Profile.from_username(L.context, username)
-
-#     data = {
-#         "followers": profile.followers,
-#         "following": profile.followees,
-#         "posts": profile.mediacount,
-#         "is_private": int(profile.is_private),
-#         "has_external_url": int(bool(profile.external_url)),
-#         "bio_length": len(profile.biography or ""),
-#         "username_length": len(profile.username),
-#         "username_has_number": int(any(char.isdigit() for char in profile.username)),
-#         "profile_pic": int(profile.profile_pic_url is not None)
-#     }
-
-#     return data
-
 
 import instaloader
 
