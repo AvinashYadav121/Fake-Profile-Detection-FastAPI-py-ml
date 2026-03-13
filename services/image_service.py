@@ -1,30 +1,10 @@
-# # from image_ai.predict_image import get_image_score
-
-# # def analyze_profile_image(url):
-# #     return get_image_score(url)
-# # from image_ai.predict_image import get_image_score
-
-# # def analyze_image(url):
-# #     try:
-# #         score = get_image_score(url)
-# #         return score
-# #     except:
-# #         return 0.0
-
-# from image_ai.predict_image import get_image_score
-
-# def analyze_image(url):
-#     try:
-#         return get_image_score(url)
-#     except:
-#         return 0.0
-
 
 from services.human_detector import is_human_face
 from services.cartoon_detector import is_cartoon
 from services.object_detector import is_animal
 from services.celebrity_check import is_celebrity
 from image_ai.predict_image import get_image_score
+
 
 def analyze_image(url):
 
@@ -49,4 +29,7 @@ def analyze_image(url):
     if celeb:
         risk += 0.4
 
-    return min(risk,1.0)
+    risk = min(risk, 1.0)
+
+    # return TWO values
+    return risk, human

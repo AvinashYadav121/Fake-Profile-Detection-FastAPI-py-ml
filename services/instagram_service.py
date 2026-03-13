@@ -22,3 +22,34 @@ def fetch_profile(username: str):
 
     except Exception as e:
         return None
+
+# import instaloader
+
+# L = instaloader.Instaloader()
+
+# # login once
+# L.login("YOUR_INSTAGRAM_USERNAME", "YOUR_PASSWORD")
+
+
+# def fetch_profile(username):
+
+#     try:
+
+#         profile = instaloader.Profile.from_username(
+#             L.context,
+#             username
+#         )
+
+#         return {
+#             "username": profile.username,
+#             "followers": profile.followers,
+#             "following": profile.followees,
+#             "posts": profile.mediacount,
+#             "bio": profile.biography,
+#             "profile_pic_url": profile.profile_pic_url,
+#             "is_private": profile.is_private
+#         }
+
+#     except Exception as e:
+#         print("Instagram error:", e)
+#         return None
