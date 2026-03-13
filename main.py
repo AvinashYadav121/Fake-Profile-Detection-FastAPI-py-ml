@@ -13,6 +13,7 @@ from urllib.parse import quote, unquote
 from fastapi.responses import StreamingResponse
 import requests
 from database import conn
+# from admin_routes import router as admin_router
 
 
 
@@ -22,7 +23,7 @@ from database import conn
 
 app = FastAPI()
 
-
+# app.include_router(admin_router)
 # =========================
 # CORS
 # =========================
@@ -402,3 +403,45 @@ def save_feedback(data: dict = Body(...)):
     finally:
 
         cursor.close()
+        
+
+
+from fastapi import Request
+
+@app.get("/admin/dashboard")
+def admin_dashboard(request: Request):
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            username,
+            followers,
+            following,
+            posts,
+            followers_following_ratio,
+            model_prediction,
+            user_feedback
+        FROM feedback_data
+        ORDER BY followers DESC
+    """)
+
+    rows = cursor.fetchall()
+
+    data = []
+
+    for r in rows:
+        data.append({
+            "username": r[0],
+            "followers": r[1],
+            "following": r[2],
+            "posts": r[3],
+            "ratio": r[4],
+            "prediction": r[5],
+            "feedback": r[6]
+        })
+
+    cursor.close()
+
+    return data
+
